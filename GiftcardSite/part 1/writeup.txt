@@ -45,4 +45,11 @@ To fix this error I need to sanitize the signature field to prevent this attack.
 A different attack from above.
 
 The first attack was a cross site scripting attack, the second attack to gift yourself without the users permission is an example of a CSRF, and the third attack to gain access to the salted
-password of admin was an example of a sql injection attack.  For 
+password of admin was an example of a sql injection attack.  In order to have a different attack I decided to look outside of the view.py file and check out the extras.py file, which contains 
+the parse_card_data function that is used in user_gift_card.  In side of the parse card data function the line, ret_val = system(f"./{CARD_PARSER} 2 {card_path_name} > tmp_file") stood out.  
+This line can run a systems process, thus can possibly be susceptible to a command injection attack which I have not done thus far.  CAR Parser is set as a global variable for giftcardreader, and 
+I can't change that field, but the card path name field involves a little user input.  The card path uses the name entered into the textbook for naming the giftcard.  The inputs are not santized thus
+I tried to enter in the command, ;ls; as the giftcard name.  In addition I submitted a malformed giftcard that would not parse the json properly thus allowing the program to hit the system call.
+When the program hit the system call, the folder in which the program is located listed all the files in the terminal.  Thus this field is susceptible to command injection attacks.
+
+To fix this error:
