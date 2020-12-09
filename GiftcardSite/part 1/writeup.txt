@@ -1,0 +1,48 @@
+XSS Vulnerability:
+
+Django is a rather interesting software with a ton of safe guards in place, but there are still vulnerabilites.
+To find I Cross Site Scripting vulnerabilites I broughtout a check list form undergrad.  I started by looking for reflected xss 
+based vulnerabilites, things like a search paramter or input field in the url.  In my first skim of the program, I didn't see any.
+So I proceeded to the next item on my list and that was to look for storage based attacks.  Django has been around for a while, so it has
+a few built in security mechanisms or middleware.  Django has built in middleware protection that safe gaurds against, XSS attacks, but can 
+be bypassed by using the mark_safe function or safe filter.  So I looked for a safe filter in the code and I found two, one located in templates/item-single.html and the
+other in gift.html.  Both fields reference the director as a safe filtered fields, so my XSS attack was now focused on injecting that field.
+
+In the views.py file there is a function called def buy_card_view(request, prod_num=0).  The third line in the file set director = request.GET.get("director", "None").  Based on the
+html director is set to safe thus injectable.  To test whether I could get a XSS popup to appear, I manually changed the director field to director = request.GET.get("director", "<script>alert("You have been hacked: XSS Style")</script>").
+Reloaded the application and visited to url http://127.0.0.1:8000/buy.html.  This resulted in an alert popup appearing before the page fully loaded, meaning this area can be expoited by XSS.  To do this without access to the code, I added director to the url with the XSS.
+http://127.0.0.1:8000/gift.html?director=<script>alert("You have been hacked: XSS Style")</script>.  This resulted in a successfull XSS attack on the page.  This attack also works on the gift.html as well, with the url: http://127.0.0.1:8000/buy.html?director=%3Cscript%3Ealert(%22You%20have%20been%20hacked:%20XSS%20Style%22)%3C/script%3E
+
+To fix this error I removed the safe tag from the two html files, which reenables the built protection provided by Django.
+
+------
+Gifted by Another
+
+Looking at the gift card view function, I traced through the values of an actual gift from user Sasha123 to Donor.  The recipent is selected through the username field and the customer identified in the gift card is based on the request.user.
+No where in the code is there anytype of checking to see if the customer, who is purchasing the gift card is actually logged in and authenticated.  Thus adding the user to the body of the Post response would make the gift card be gifted to whomever
+the hacker would like and would come from the customer account of their choice.  Using Burp, I added the user = Sasha123 in the body of the post request as well as changed the username to my Hackerbae account which is the malicous account.  When I executed
+the post request the Hackerbae now had a gifted giftcard in the account.
+
+To fix this error I check to make sure the buyer is actually logged into the account.  In addition, there seemed to be a few logical errors in the code that I fixed as well, with the write_card_data missing arguments.
+
+
+------
+One attack that allows you to obtain the salted password for a user given their username. The database should contain a user named ``admin.'
+
+The idea is to obtain a salted password of a user given their username.  The usernames are stored in a sqlite database, thus this attack is going to involve sqlinjection.
+Based on the views file, I know that "select id, count(*) as count from LegacySite_card where LegacySite_card.user_id = %s" will return the amount of cards a user has.
+I took a look in the database file and saw that their is a table called LegacySite_user.  There is another select statement, "select id from LegacySite_card where data = '%s'" % signature.  
+Both of these select statements are called when a gift card is uploaded into the site.  I can't really manually edit the gift card count select statement, but the signature is an inputed field in
+the gift card file that is uploaded.  I decided to edit the signature field, after a few tries I was able to come up with the following signature, that encompasses the sql query
+ to drop the password for admin: "[ insert crypto signature here ]'UNION SELECT password FROM LegacySite_user WHERE username = 'admin". I took a peek in the sql database and found the correct
+ column names and table that housed this information.  If a hacker did not have access to the database they could find this info with commands like SELECT name FROM sqlite_schema
+WHERE type='table' ORDER BY name.  Using the signature above, I was able to output the password in "Found card with data: {{ card_found }}" response area of the use post response.
+
+To fix this error I need to sanitize the signature field to prevent this attack.  To do this I can use Django ORM capabilities
+
+-------
+
+A different attack from above.
+
+The first attack was a cross site scripting attack, the second attack to gift yourself without the users permission is an example of a CSRF, and the third attack to gain access to the salted
+password of admin was an example of a sql injection attack.  For 
