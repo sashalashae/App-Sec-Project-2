@@ -1,9 +1,9 @@
 language: python # => 1
-    python: # => 2
-      - "3.7.6"
-    services: # => 3
-      - sqlite3
-    env: # => 4 
-      -DJANGO=1.0.8 DB=sqlite3
-    script: # => 7
-      - python manage.py test
+python: # => 2
+  - "3.7.6"
+services: # => 3
+  - sqlite3
+env: # => 4 
+  -DJANGO=1.0.8 DB=sqlite3
+script: # => 7
+  - python manage.py test
