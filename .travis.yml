@@ -6,4 +6,5 @@ services: # => 3
 env: # => 4 
   -DJANGO=1.0.8 DB=sqlite3
 script: # => 7
+  - cd GiftcardSite
   - python manage.py test
