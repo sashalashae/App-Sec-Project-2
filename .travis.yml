@@ -1,8 +1,9 @@
-language: c
-compiler: gcc
-script:
-  - gcc -o giftcardreader giftcardreader.c
-  - ./giftcardreader 1 examplefile.gft
-  - ./giftcardreader 1 part2/crash1.gft
-  - ./giftcardreader 1 part2/crash2.gft
-  - ./giftcardreader 1 part2/hang.gft
+language: python # => 1
+    python: # => 2
+      - "3.7.6"
+    services: # => 3
+      - sqlite3
+    env: # => 4 
+      -DJANGO=1.0.8 DB=sqlite3
+    script: # => 7
+      - python manage.py test
