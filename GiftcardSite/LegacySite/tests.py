@@ -25,7 +25,7 @@ class TestPart1(TestCase):
         self.client.login(username="Hackerbae", password="Hackerbae")
         response = self.client.post(
             self.gift_url,
-            {"username": "Hackerbae", "user": "Sasha123", "amount": "99135590"},
+            {"username": "Hackerbae", "user": "Sasha123", "amount": "99135591"},
         )
         self.assertEquals(response.status_code, 200)
 
