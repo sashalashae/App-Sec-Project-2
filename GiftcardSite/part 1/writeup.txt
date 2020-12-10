@@ -14,6 +14,7 @@ Reloaded the application and visited to url http://127.0.0.1:8000/buy.html.  Thi
 http://127.0.0.1:8000/gift.html?director=<script>alert("You have been hacked: XSS Style")</script>.  This resulted in a successfull XSS attack on the page.  This attack also works on the gift.html as well, with the url: http://127.0.0.1:8000/buy.html?director=%3Cscript%3Ealert(%22You%20have%20been%20hacked:%20XSS%20Style%22)%3C/script%3E
 
 To fix this error I removed the safe tag from the two html files, which reenables the built protection provided by Django.
+Thus originally the html files had {director | safe}, now they say {director}
 
 ------
 Gifted by Another
@@ -23,7 +24,12 @@ No where in the code is there anytype of checking to see if the customer, who is
 the hacker would like and would come from the customer account of their choice.  Using Burp, I added the user = Sasha123 in the body of the post request as well as changed the username to my Hackerbae account which is the malicous account.  When I executed
 the post request the Hackerbae now had a gifted giftcard in the account.
 
-To fix this error I check to make sure the buyer is actually logged into the account.  In addition, there seemed to be a few logical errors in the code that I fixed as well, with the write_card_data missing arguments.
+To fix this error I check to make sure the buyer is actually logged into the account.  In addition, there seemed to be a few logical errors in the code that I fixed as well, with the write_card_data missing arguments.  At the beginning of the post  for the function
+I added the following lines of code:
+        if not request.user.is_authenticated:
+            return redirect("login.html")
+If the hacker injects the a different user into the body of the post response, these lines will verify that the body user is authenticated.  Which it will not be in the case of this hack.
+
 
 
 ------
@@ -38,7 +44,13 @@ the gift card file that is uploaded.  I decided to edit the signature field, aft
  column names and table that housed this information.  If a hacker did not have access to the database they could find this info with commands like SELECT name FROM sqlite_schema
 WHERE type='table' ORDER BY name.  Using the signature above, I was able to output the password in "Found card with data: {{ card_found }}" response area of the use post response.
 
-To fix this error I need to sanitize the signature field to prevent this attack.  To do this I can use Django ORM capabilities
+To fix this error I need to sanitize the signature field to prevent this attack.  To do this I utlized pythons html.escape, which escapes characters like '' or /.  Thus preventing the sql injection attack.
+signature = json.loads(card_data)["records"][0]["signature"]
+# signatures should be pretty unique, right?
+signature = html.escape(signature)
+card_query = Card.objects.raw(
+    "select id from LegacySite_card where data = '%s'" % signature
+)  ##Need to fix
 
 -------
 
@@ -53,3 +65,6 @@ I tried to enter in the command, ;ls; as the giftcard name.  In addition I submi
 When the program hit the system call, the folder in which the program is located listed all the files in the terminal.  Thus this field is susceptible to command injection attacks.
 
 To fix this error:
+
+To fix this error in the use gift card function I added a check for whether the name contains, ;.  The ; is necessary for the command to be recognized seperatly from the rest of the file.  This is a
+form of inut sanitization.

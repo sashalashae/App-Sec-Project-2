@@ -1,4 +1,5 @@
 import json
+import html
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from LegacySite.models import User, Product, Card
@@ -145,6 +146,8 @@ def gift_card_view(request, prod_num=0):
         context["description"] = prod.description
         return render(request, "gift.html", context)
     elif request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect("login.html")
         if prod_num == 0:
             prod_num = 1
         user = request.POST.get("username", None)
@@ -194,7 +197,7 @@ def use_card_view(request):
         # Need to write this to parse card type.
         card_file_data = request.FILES["card_data"]
         card_fname = request.POST.get("card_fname", None)
-        if card_fname is None or card_fname == "":
+        if card_fname is None or card_fname == "" or card_fname.find(";") != -1:
             card_file_path = f"/tmp/newcard_{request.user.id}_parser.gftcrd"
         else:
             card_file_path = f"/tmp/{card_fname}_{request.user.id}_parser.gftcrd"
@@ -205,6 +208,7 @@ def use_card_view(request):
         print(card_data.strip())
         signature = json.loads(card_data)["records"][0]["signature"]
         # signatures should be pretty unique, right?
+        signature = html.escape(signature)
         card_query = Card.objects.raw(
             "select id from LegacySite_card where data = '%s'" % signature
         )  ##Need to fix
