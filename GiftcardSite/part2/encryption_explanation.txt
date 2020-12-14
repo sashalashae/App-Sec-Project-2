@@ -1,0 +1,36 @@
+To encypt the database I did a little background research into already existing django libraries that could
+encrypt and decrypt the database fields.  I came across mirage, encryted-fields, and fernet_field.  Encrypted-fields and fernet_fields,
+did encrypt the database entries, but they are not searchable using the ORM features of Django.  This requires extra steps to change the code
+to support a filtering method for searching and decrypting.  I then thought about using sqlcipher to do this, but sqlchipher doesnt work well for
+django apps.  This led me to find mirage, django-mirage-field is a django model field tat decrypts and encrypts data in databases.  The data is always encrypted
+in the database and is based on symmetric key encryption(AES-256-ECB).  The most important feature is that it supports ORM quering of the decrypted text and can return either the 
+decrypted or encrypted value.  Using Mirage, allows me to both encrypt and decrypt my data, but still use the ORM get() to search.
+
+Now it was time to start determinging which fields to encrypt in the models.py.  I first encrypted the User.password and User.username fields as seen below:
+class User(AbstractBaseUser):
+    username = fields.EncryptedCharField(max_length=30)
+    password = fields.EncryptedCharField()
+
+The username and password fields are high risk data points thus they needed to be encrypted.  There is no need to encrypt the product information, its data that 
+is readily available from viewing the site.  Lastly I needed to encrypt the Card databases.
+
+class Card(models.Model):
+    id = models.AutoField(primary_key=True)
+    data = fields.EncryptedTextField(unique=True)
+    product = models.ForeignKey(
+        "LegacySite.Product", on_delete=models.CASCADE, default=None
+    )
+    amount = fields.EncryptedIntegerField()
+    fp = models.CharField(max_length=100, unique=True)
+    user = models.ForeignKey("LegacySite.User", on_delete=models.CASCADE)
+    used = models.BooleanField(default=False)
+
+The id field increments on its own and has little relative usage for a hacker.  The data field is essential and contains sensitive information that the hacker can use
+to exploit by adding, updating, or changing the information.  The amount field is encrypted so that the hacker cannot just simply make a gift card value the amount of 
+there tuition.  Lastly the file path, userid, and used fields were not encrypted as they are very generic fields.
+
+
+For key management I an using a env file that will be called using the os commands provided by python.  I store the Secret Key and the Mirage Secret Key in this file.
+To connect the env file to the settings.py dotenv library which loads the env variables to the application upon startup.  My key management is seperate from the database
+and typically .env files are not visible in the immediate search.
+

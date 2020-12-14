@@ -3,7 +3,9 @@ python: # => 2
   - "3.7.6"
 install:
   - pip3 install django=="3.0.8"
-env: # => 4 
+  - pip3 install django-mirage-field
+  - pip3 install -U python-dotenv
+env: # => 4
   -DJANGO=3.0.8
 script: # => 7
   - cd GiftcardSite
